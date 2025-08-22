@@ -1,3 +1,4 @@
+from collections import deque
 surroundings = {
     (0, 0): [[0, 0, 0],
              [0, 0, 0],
@@ -114,29 +115,75 @@ def move_in_direction(pos, direction):
         y -= 1
     return [x, y]
 
-def return_to_home():
-    """Return robot to home coordinates (0,0)."""
-    global robot_position
-    print("Returning home due to low battery...")
-    while robot_position != home_position:
-        if robot_position[0] > home_position[0]:
-            turn_to(180)
-            move_forward()
-            robot_position[0] -= 1
-        elif robot_position[0] < home_position[0]:
-            turn_to(0)
-            move_forward()
-            robot_position[0] += 1
 
-        if robot_position[1] > home_position[1]:
-            turn_to(270)
-            move_forward()
-            robot_position[1] -= 1
-        elif robot_position[1] < home_position[1]:
-            turn_to(90)
-            move_forward()
-            robot_position[1] += 1
-    print("Returned home!")
+def neighbors(x, y):
+    """Return 8-connected neighbors around (x,y)."""
+    return [
+        (x+1, y), (x-1, y), (x, y+1), (x, y-1),
+        (x+1, y+1), (x+1, y-1), (x-1, y+1), (x-1, y-1)
+    ]
+
+def find_path(start, goal):
+    """Find a path from start to goal using BFS and surroundings map."""
+    queue = deque([[start]])
+    visited = set([start])
+
+    while queue:
+        path = queue.popleft()
+        x, y = path[-1]
+
+        if (x, y) == goal:
+            return path  # path found!
+
+        for nx, ny in neighbors(x, y):
+            if (nx, ny) in surroundings and surroundings[(nx, ny)] == 0:  
+                if (nx, ny) not in visited:
+                    visited.add((nx, ny))
+                    queue.append(path + [(nx, ny)])
+    return None
+
+def move_towards(target):
+    """Turn toward the target cell and move one step."""
+    global robot_position, robot_direction
+    tx, ty = target
+    x, y = robot_position
+
+    dx, dy = tx - x, ty - y
+    if dx == 1 and dy == 0:
+        turn_to(0)
+    elif dx == -1 and dy == 0:
+        turn_to(180)
+    elif dx == 0 and dy == 1:
+        turn_to(90)
+    elif dx == 0 and dy == -1:
+        turn_to(270)
+    elif dx == 1 and dy == 1:
+        turn_to(45)
+    elif dx == 1 and dy == -1:
+        turn_to(315)
+    elif dx == -1 and dy == 1:
+        turn_to(135)
+    elif dx == -1 and dy == -1:
+        turn_to(225)
+
+    move_forward()
+    robot_position = [tx, ty]
+
+def return_to_home():
+    """Return robot to home coordinates (0,0) using BFS + map."""
+    global robot_position
+    print("Returning home using surroundings map...")
+
+    path = find_path(tuple(robot_position), tuple(home_position))
+    if not path:
+        print("⚠️ No safe path home!")
+        return
+
+    for step in path[1:]:  # skip current cell
+        move_towards(step)
+
+    print("✅ Returned home!")
+
 
 def turn_to(angle):
     """Turn robot to a specific direction."""
