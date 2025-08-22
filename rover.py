@@ -18,17 +18,14 @@ def scan():
         f = get_distance()
         temp.append(f)
 
-        if len(temp) == 3: w
-            if c == 2:       
-                temp.insert(1, 0) 
+        if len(temp) == 3:
+            if c == 1:  # middle row, insert robot position in center
+                temp.insert(1, 0)
             matrixr.append(temp)
             temp = []
             c += 1
 
         tinybit.turn(45) 
-
-    if temp:
-        matrixr.append(temp)
 
     return matrixr
 
